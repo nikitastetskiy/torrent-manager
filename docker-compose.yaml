@@ -1,0 +1,38 @@
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000 # User id
+      - PGID=1000 # Group id
+      - TZ=Europe/Madrid # Your current timezone
+      - USER=mini-server # optional
+      - PASS=Begoño030! # optional
+    volumes:
+      - ./volume/config:/config # Change this to your docker config folder
+      - ./volume/disks/movies:/downloads/movies
+      - ./volume/disks/series:/downloads/series
+      - ./volume/disks/plexmedia/download/temp:/downloads/incomplete
+    ports:
+      - "${TRANSMISSION_PORT}:9091" # Web UI port
+      - 51413:51413 # Torrent port (TCP)
+      - 51413:51413/udp # Torrent port (UDP)
+    restart: unless-stopped # This makes sure that the application restarts when it crashes
+
+  api:
+    build: .
+    container_name: torrent-manager
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      - transmission
+    environment:
+      - TRANSMISSION_USER=${TRANSMISSION_USER}
+      - TRANSMISSION_PASS=${TRANSMISSION_PASS}
+      - TRANSMISSION_HOST=${TRANSMISSION_HOST}
+      - TRANSMISSION_PORT=${TRANSMISSION_PORT}
+    restart: unless-stopped
+
+networks:
+  default:
+    name: torrent-network
